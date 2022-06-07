@@ -1,0 +1,17 @@
+version: '3.3'
+services:
+    localstack:
+        container_name: "localstack"
+        #image: localstack/localstack:latest
+        image: localstack/localstack:0.14.3.1
+        ports:
+          - "4566:4566" # Default port forward
+        environment:
+          - SERVICES=s3 # AWS Services that you want in your localstack
+          - DEBUG=1 # Debug level 1 if you want to logs, 0 if you want to disable
+          - LAMBDA_REMOTE_DOCKER=0
+          - DATA_DIR=./.data #  Local directory for saving persistent data(Example: es storage)
+          - DEFAULT_REGION=us-east-1
+        volumes:
+          - './.localstack:/tmp/localstack'
+          - '/var/run/docker.sock:/var/run/docker.sock'
