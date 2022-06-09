@@ -64,4 +64,8 @@ object Dependencies {
   val betterMonadicFor = Seq("com.olegpy" %% "better-monadic-for" % "0.3.1")
 
   val minio = Seq("io.minio" % "minio" % "8.4.1")
+
+  val jsonSchemaValidator = Seq(
+    "com.github.java-json-tools" % "json-schema-validator" % "2.2.14"
+  )
 }

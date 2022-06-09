@@ -81,3 +81,11 @@ final case class UnknownResponse(
 ) extends InvalidResponse {
   override def message: String = s"Internal error"
 }
+
+final case class ValidationFailedResponse(
+    action: String,
+    id: String,
+    errorMessage: String
+) extends InvalidResponse {
+  override def message: String = errorMessage
+}

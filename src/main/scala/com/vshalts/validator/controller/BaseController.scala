@@ -23,6 +23,9 @@ trait BaseController {
   implicit lazy val schemaBodyCodec: JsonCodec[SchemaBody] =
     Codec.json(raw => DecodeResult.Value(SchemaBody(raw)))(_.content)
 
+  implicit lazy val documentBodyCodec: JsonCodec[DocumentBody] =
+    Codec.json(raw => DecodeResult.Value(DocumentBody(raw)))(_.content)
+
   val invalidResponseSchema: Schema[InvalidResponseSchema] = Schema.derived
   val validResponseSchema: Schema[ValidResponseSchema] = Schema.derived
 

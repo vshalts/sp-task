@@ -10,7 +10,7 @@ lazy val root = (project in file("."))
     name := "json-validator",
     // main dependencies
     libraryDependencies ++= catsCore ++ catsEffect ++ logback ++ tapir ++ openapi ++
-      log4cats ++ http4s ++ pureconfig ++ betterMonadicFor ++ circe ++ minio,
+      log4cats ++ http4s ++ pureconfig ++ betterMonadicFor ++ circe ++ minio ++ jsonSchemaValidator,
     // test dependencies
     libraryDependencies ++= (scalatest ++ catsEffectScalatest ++ testcontainers)
       .map(_ % Test),

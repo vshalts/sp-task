@@ -17,9 +17,12 @@ class SchemaController[F[_]: Async](
 ) extends BaseController {
   override val controllerPrefix = "schema"
 
+  val uploadAction = "uploadSchema"
+  val downloadAction = "downloadSchema"
+
   val uploadEndpoint =
     baseEndpoint.post
-      .name("uploadSchema")
+      .name(uploadAction)
       .description("Upload schema")
       .in(schemaIdPath)
       .in(customCodecJsonBody[SchemaBody].description("Source json schema"))
@@ -43,14 +46,14 @@ class SchemaController[F[_]: Async](
         schemaService
           .uploadSchema(schemaId, schemaBody)
           .redeem(
-            t => Left(handleErrors("uploadSchema", schemaId.id, t)),
-            _ => Right(ValidResponse("uploadSchema", schemaId.id))
+            t => Left(handleErrors(uploadAction, schemaId.id, t)),
+            _ => Right(ValidResponse(uploadAction, schemaId.id))
           )
       }
 
   val downloadEndpoint =
     baseEndpoint.get
-      .name("downloadSchema")
+      .name(downloadAction)
       .description("Download schema")
       .in(schemaIdPath)
       .out(customCodecJsonBody[SchemaBody].description("Json schema body"))
@@ -66,7 +69,7 @@ class SchemaController[F[_]: Async](
         schemaService
           .downloadSchema(schemaId)
           .redeem(
-            t => Left(handleErrors("downloadSchema", schemaId.id, t)),
+            t => Left(handleErrors(downloadAction, schemaId.id, t)),
             f => Right(f)
           )
       }
