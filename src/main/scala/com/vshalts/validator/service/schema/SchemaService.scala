@@ -5,14 +5,12 @@ import cats.implicits._
 import cats.effect.Resource
 import cats.effect.kernel.Async
 import com.vshalts.validator.domain.BusinessError.{
-  InvalidJsonError,
   KeyNotFoundError,
   SchemaNotFoundError
 }
 import com.vshalts.validator.service.store.KeyValueStore
+import com.vshalts.validator.utils.JsonHelpers
 import domain._
-import io.circe.ParsingFailure
-import io.circe.parser._
 
 trait SchemaService[F[_]] {
   def uploadSchema(schemaId: SchemaId, schemaBody: SchemaBody): F[Unit]
@@ -35,10 +33,7 @@ object SchemaService {
         schemaBody: SchemaBody
     ): F[Unit] = {
       for {
-        // validate schema
-        _ <- Async[F].fromEither(parse(schemaBody.content)).adaptError {
-          case ParsingFailure(message, _) => InvalidJsonError(message)
-        }
+        _ <- JsonHelpers.parseJson(schemaBody.content) // to validate json
         _ <- keyValueStore.put(schemaId.id, schemaBody.content)
       } yield ()
     }
