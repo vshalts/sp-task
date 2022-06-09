@@ -73,7 +73,7 @@ class AwsS3KeyValueStore[F[_]: Async] private (
       .adaptError {
         case e: ErrorResponseException
             if e.errorResponse().code() == "NoSuchKey" =>
-          KeyNotFoundError()
+          KeyNotFoundError(id)
       }
 
   private def idToObjectName(id: String) =

@@ -64,7 +64,7 @@ trait BaseController {
   ): InvalidResponse = {
     error match {
       case InvalidJsonError(details) => InvalidJsonResponse(action, id, details)
-      case SchemaNotFoundError()     => SchemaNotFoundResponse(action, id)
+      case SchemaNotFoundError(_)    => SchemaNotFoundResponse(action, id)
       case _                         => UnknownResponse(action, id)
     }
   }

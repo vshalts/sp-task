@@ -58,6 +58,8 @@ object Dependencies {
     "openapi-circe-yaml"
   ) map ("com.softwaremill.sttp.apispec" %% _ % "0.2.1")
 
+  val awssdk = Seq("com.amazonaws" % "aws-java-sdk-s3" % "1.12.221")
+
   val kindProjector =
     "org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full
 

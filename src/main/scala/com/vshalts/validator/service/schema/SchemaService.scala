@@ -21,9 +21,8 @@ object SchemaService {
 
   def make[F[_]: Async](
       keyValueStore: KeyValueStore[F]
-  ): Resource[F, SchemaService[F]] = {
+  ): Resource[F, SchemaService[F]] =
     Resource.pure(new SchemaServiceImpl[F](keyValueStore))
-  }
 
   private class SchemaServiceImpl[F[_]: Async](keyValueStore: KeyValueStore[F])
       extends SchemaService[F] {
@@ -31,16 +30,15 @@ object SchemaService {
     override def uploadSchema(
         schemaId: SchemaId,
         schemaBody: SchemaBody
-    ): F[Unit] = {
+    ): F[Unit] =
       for {
         _ <- JsonHelpers.parseJson(schemaBody.content) // to validate json
         _ <- keyValueStore.put(schemaId.id, schemaBody.content)
       } yield ()
-    }
 
     override def downloadSchema(schemaId: SchemaId): F[SchemaBody] = {
       keyValueStore.get(schemaId.id).map(SchemaBody).adaptError {
-        case KeyNotFoundError() => SchemaNotFoundError()
+        case KeyNotFoundError(_) => SchemaNotFoundError(schemaId)
       }
     }
   }

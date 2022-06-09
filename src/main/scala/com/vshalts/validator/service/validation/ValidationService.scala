@@ -28,9 +28,8 @@ object ValidationService {
 
   def make[F[_]: Async](
       schemaService: SchemaService[F]
-  ): Resource[F, ValidationService[F]] = {
+  ): Resource[F, ValidationService[F]] =
     Resource.pure(new ValidationServiceImpl[F](schemaService))
-  }
 
   private class ValidationServiceImpl[F[_]: Async](
       schemaService: SchemaService[F]

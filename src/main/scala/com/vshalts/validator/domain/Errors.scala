@@ -10,7 +10,7 @@ object BusinessError {
   final case class InvalidJsonError(details: String)
       extends BusinessError(details)
 
-  final case class SchemaNotFoundError() extends BusinessError()
+  final case class SchemaNotFoundError(id: SchemaId) extends BusinessError()
 
-  final case class KeyNotFoundError() extends BusinessError()
+  final case class KeyNotFoundError(id: String) extends BusinessError()
 }
