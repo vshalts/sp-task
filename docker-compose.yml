@@ -15,3 +15,14 @@ services:
         volumes:
           - './.localstack:/tmp/localstack'
           - '/var/run/docker.sock:/var/run/docker.sock'
+
+    json-validator:
+        container_name: "json-validator"
+        image: json-validator:1.0.0-SNAPSHOT
+        environment:
+            - API_HOST=0.0.0.0
+            - AWS_HOST=localstack
+        ports:
+            - "9000:9000"
+        depends_on:
+            - "localstack"

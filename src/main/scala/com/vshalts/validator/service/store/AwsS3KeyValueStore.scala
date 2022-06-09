@@ -1,6 +1,7 @@
 package com.vshalts.validator
 package service.store
 
+import org.typelevel.log4cats.Logger
 import cats.implicits._
 import cats.effect.{Async, Resource}
 import com.google.common.base.Charsets
@@ -10,17 +11,20 @@ import config.AwsConfig
 import resource.AwsClient.AwsClient
 import io.minio._
 import io.minio.errors.ErrorResponseException
+import retry.RetryPolicies.{exponentialBackoff, limitRetries}
+import retry._
 
 import java.io.{ByteArrayInputStream, InputStreamReader}
 import java.util.Base64
+import scala.concurrent.duration._
 
-class AwsS3KeyValueStore[F[_]: Async] private (
+class AwsS3KeyValueStore[F[_]: Logger: Sleep: Async] private (
     config: AwsConfig,
     awsClient: AwsClient
 ) extends KeyValueStore[F] {
 
-  def init(): F[Unit] =
-    Async[F]
+  def init(): F[Unit] = {
+    val logic = Async[F]
       .blocking {
         val bucketExistsArgs = BucketExistsArgs
           .builder()
@@ -38,6 +42,15 @@ class AwsS3KeyValueStore[F[_]: Async] private (
           awsClient.makeBucket(makeBucketArgs)
         }
       }
+
+    def logging: (Throwable, RetryDetails) => F[Unit] =
+      (_, _) => Logger[F].info("Trying to connect to s3")
+
+    retryingOnAllErrors(
+      policy = limitRetries[F](8) join exponentialBackoff[F](200.milliseconds),
+      onError = logging
+    )(logic)
+  }
 
   override def put(id: String, value: String): F[Unit] =
     Async[F].blocking {
@@ -81,9 +94,14 @@ class AwsS3KeyValueStore[F[_]: Async] private (
 }
 
 object AwsS3KeyValueStore {
-  def make[F[_]: Async](config: AwsConfig, awsClient: AwsClient) = {
+  def make[F[_]: Logger: Sleep: Async](
+      config: AwsConfig,
+      awsClient: AwsClient
+  ) = {
     for {
-      store <- Resource.pure(new AwsS3KeyValueStore(config, awsClient))
+      store <- Resource.pure[F, AwsS3KeyValueStore[F]](
+        new AwsS3KeyValueStore[F](config, awsClient)
+      )
       _ <- Resource.eval(store.init())
     } yield store: KeyValueStore[F]
   }

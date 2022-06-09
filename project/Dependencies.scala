@@ -70,4 +70,7 @@ object Dependencies {
   val jsonSchemaValidator = Seq(
     "com.github.java-json-tools" % "json-schema-validator" % "2.2.14"
   )
+
+  val catsRetry = Seq("com.github.cb372" %% "cats-retry" % "3.1.0")
+
 }

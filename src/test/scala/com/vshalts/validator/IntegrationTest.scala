@@ -14,6 +14,7 @@ import matchers._
 import org.testcontainers.containers.localstack.{
   LocalStackContainer => JavaLocalStackContainer
 }
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 trait IntegrationTest
     extends AsyncFlatSpec
@@ -44,6 +45,8 @@ trait IntegrationTest
         region = "us-east-1",
         bucket = "validator"
       )).getOrElse(throw new RuntimeException("Unexpected error"))
+
+      implicit val logger = Slf4jLogger.getLogger[IO]
 
       val awsStore = for {
         client <- AwsClient.makeAwsClient[IO](awsConfig)
