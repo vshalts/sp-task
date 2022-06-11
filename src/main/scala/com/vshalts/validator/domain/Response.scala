@@ -64,7 +64,7 @@ final case class SchemaNotFoundResponse(
     action: String,
     id: String
 ) extends InvalidResponse {
-  override def message: String = s"Can't find schema with id '$id'"
+  override def message: String = s"Schema not found"
 }
 
 final case class InvalidJsonResponse(

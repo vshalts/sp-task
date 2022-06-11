@@ -2,7 +2,7 @@ package com.vshalts.validator
 
 import cats.effect._
 import cats.implicits._
-import service.store.AwsS3KeyValueStore
+import service.store.{AwsS3KeyValueStore, CacheKeyValueStore}
 import service.validation.ValidationService
 import service.schema.SchemaService
 import org.typelevel.log4cats._
@@ -30,8 +30,10 @@ object Main extends IOApp.Simple {
 
       awsClient <- AwsClient.makeAwsClient[F](config.aws)
       keyValueStore <- AwsS3KeyValueStore.make[F](config.aws, awsClient)
+      cacheKeyValueStore <- CacheKeyValueStore
+        .make[F](config.cache, keyValueStore)
 
-      schemaService <- SchemaService.make[F](keyValueStore)
+      schemaService <- SchemaService.make[F](cacheKeyValueStore)
       validationService <- ValidationService.make[F](schemaService)
       schemaController = new SchemaController[F](schemaService)
       validationController = new ValidationController[F](validationService)

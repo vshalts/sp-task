@@ -11,7 +11,7 @@ lazy val root = (project in file("."))
     // main dependencies
     libraryDependencies ++= catsCore ++ catsEffect ++ logback ++ tapir ++ openapi ++
       log4cats ++ http4s ++ pureconfig ++ betterMonadicFor ++ circe ++ minio ++
-      jsonSchemaValidator ++ catsRetry,
+      jsonSchemaValidator ++ catsRetry ++ scaffeine,
     // test dependencies
     libraryDependencies ++= (scalatest ++ catsEffectScalatest ++ testcontainers ++ awssdk)
       .map(_ % Test),

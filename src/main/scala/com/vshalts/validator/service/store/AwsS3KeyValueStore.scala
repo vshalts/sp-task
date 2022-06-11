@@ -6,7 +6,7 @@ import cats.implicits._
 import cats.effect.{Async, Resource}
 import com.google.common.base.Charsets
 import com.google.common.io.CharStreams
-import com.vshalts.validator.domain.BusinessError.KeyNotFoundError
+import domain.BusinessError.KeyNotFoundError
 import config.AwsConfig
 import resource.AwsClient.AwsClient
 import io.minio._

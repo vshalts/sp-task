@@ -73,4 +73,6 @@ object Dependencies {
 
   val catsRetry = Seq("com.github.cb372" %% "cats-retry" % "3.1.0")
 
+  val scaffeine = Seq("com.github.blemale" %% "scaffeine" % "5.2.0")
+
 }
