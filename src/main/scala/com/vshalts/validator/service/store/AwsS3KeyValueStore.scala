@@ -11,67 +11,44 @@ import config.AwsConfig
 import resource.AwsClient.AwsClient
 import io.minio._
 import io.minio.errors.ErrorResponseException
-import retry.RetryPolicies.{exponentialBackoff, limitRetries}
+import retry.RetryPolicies.{constantDelay, limitRetries}
 import retry._
 
 import java.io.{ByteArrayInputStream, InputStreamReader}
 import java.util.Base64
-import scala.concurrent.duration._
 
 class AwsS3KeyValueStore[F[_]: Logger: Sleep: Async] private (
     config: AwsConfig,
     awsClient: AwsClient
 ) extends KeyValueStore[F] {
 
-  def init(): F[Unit] = {
-    val logic = Async[F]
-      .blocking {
-        val bucketExistsArgs = BucketExistsArgs
+  override def put(id: String, value: String): F[Unit] = {
+    val logic =
+      Async[F].blocking {
+        val args = PutObjectArgs
           .builder()
           .bucket(config.bucket)
           .region(config.region)
+          .contentType("application/json")
+          .`object`(idToObjectName(id))
+          .stream(
+            new ByteArrayInputStream(value.getBytes("UTF-8")),
+            -1,
+            10 * 1024 * 1024
+          )
           .build()
 
-        if (!awsClient.bucketExists(bucketExistsArgs)) {
-          val makeBucketArgs = MakeBucketArgs
-            .builder()
-            .bucket(config.bucket)
-            .region(config.region)
-            .build()
-
-          awsClient.makeBucket(makeBucketArgs)
-        }
+        val _ = awsClient.putObject(args)
       }
 
-    def logging: (Throwable, RetryDetails) => F[Unit] =
-      (_, _) => Logger[F].info("Trying to connect to s3")
-
-    retryingOnAllErrors(
-      policy = limitRetries[F](8) join exponentialBackoff[F](200.milliseconds),
-      onError = logging
-    )(logic)
+    for {
+      _ <- Logger[F].debug(s"AWS: Storing id: $id")
+      _ <- retryLogic(logic, s"Error storing $id")
+    } yield ()
   }
 
-  override def put(id: String, value: String): F[Unit] =
-    Async[F].blocking {
-      val args = PutObjectArgs
-        .builder()
-        .bucket(config.bucket)
-        .region(config.region)
-        .contentType("application/json")
-        .`object`(idToObjectName(id))
-        .stream(
-          new ByteArrayInputStream(value.getBytes("UTF-8")),
-          -1,
-          10 * 1024 * 1024
-        )
-        .build()
-
-      val _ = awsClient.putObject(args)
-    }
-
-  override def get(id: String): F[String] =
-    Async[F]
+  override def get(id: String): F[String] = {
+    val logic = Async[F]
       .blocking {
         val args = GetObjectArgs
           .builder()
@@ -89,6 +66,26 @@ class AwsS3KeyValueStore[F[_]: Logger: Sleep: Async] private (
           KeyNotFoundError(id)
       }
 
+    for {
+      _ <- Logger[F].debug(s"AWS: Getting value for '$id'")
+      value <- retryLogic(logic, s"Error getting '$id'")
+    } yield value
+  }
+
+  private def retryLogic[A](logic: F[A], errorMessage: => String) = {
+    retryingOnAllErrors(
+      policy = limitRetries[F](config.retryCount) join constantDelay[F](
+        config.retryDelay
+      ),
+      onError = noop[F, Throwable]
+    )(logic).onError {
+      case KeyNotFoundError(id) =>
+        Logger[F].debug(s"AWS: Can't find '$id'")
+      case e: Throwable =>
+        Logger[F].error(s"AWS: $errorMessage due to error: ${e.getMessage}")
+    }
+  }
+
   private def idToObjectName(id: String) =
     Base64.getUrlEncoder.encodeToString(id.getBytes("UTF-8"))
 }
@@ -98,11 +95,8 @@ object AwsS3KeyValueStore {
       config: AwsConfig,
       awsClient: AwsClient
   ) = {
-    for {
-      store <- Resource.pure[F, AwsS3KeyValueStore[F]](
-        new AwsS3KeyValueStore[F](config, awsClient)
-      )
-      _ <- Resource.eval(store.init())
-    } yield store: KeyValueStore[F]
+    Resource.pure[F, KeyValueStore[F]](
+      new AwsS3KeyValueStore[F](config, awsClient)
+    )
   }
 }

@@ -21,7 +21,9 @@ package config {
       port: Port,
       secure: Boolean,
       region: String,
-      bucket: String
+      bucket: String,
+      retryCount: Int,
+      retryDelay: FiniteDuration
   )
 
   object AwsConfig {

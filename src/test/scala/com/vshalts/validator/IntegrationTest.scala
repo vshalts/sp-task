@@ -1,6 +1,6 @@
 package com.vshalts.validator
 
-import cats.effect.IO
+import cats.effect.{Async, IO, Resource}
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.comcast.ip4s.{Hostname, Port}
 import com.dimafeng.testcontainers.LocalStackContainer
@@ -10,11 +10,14 @@ import resource.AwsClient
 import service.store.{AwsS3KeyValueStore, KeyValueStore}
 import org.scalatest._
 import flatspec._
+import io.minio.MakeBucketArgs
 import matchers._
 import org.testcontainers.containers.localstack.{
   LocalStackContainer => JavaLocalStackContainer
 }
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+
+import scala.concurrent.duration._
 
 trait IntegrationTest
     extends AsyncFlatSpec
@@ -43,13 +46,24 @@ trait IntegrationTest
         port = port,
         secure = false,
         region = "us-east-1",
-        bucket = "validator"
+        bucket = "validator",
+        retryCount = 1,
+        retryDelay = 100.millis
       )).getOrElse(throw new RuntimeException("Unexpected error"))
 
       implicit val logger = Slf4jLogger.getLogger[IO]
 
+      val makeBucketArgs = MakeBucketArgs
+        .builder()
+        .bucket(awsConfig.bucket)
+        .region(awsConfig.region)
+        .build()
+
       val awsStore = for {
         client <- AwsClient.makeAwsClient[IO](awsConfig)
+        _ <- Resource.eval(
+          Async[IO].blocking(client.makeBucket(makeBucketArgs))
+        )
         store <- AwsS3KeyValueStore.make[IO](awsConfig, client)
       } yield store
 

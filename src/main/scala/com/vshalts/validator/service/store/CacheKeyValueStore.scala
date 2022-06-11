@@ -6,24 +6,30 @@ import cats.effect.{Async, Resource, Sync}
 import com.github.blemale.scaffeine.{Cache, Scaffeine}
 import domain.BusinessError.KeyNotFoundError
 import config.CacheConfig
+import org.typelevel.log4cats.Logger
 
-class CacheKeyValueStore[F[_]: Async] private (
+class CacheKeyValueStore[F[_]: Logger: Async] private (
     cache: Cache[String, Option[String]],
     underlyingStore: KeyValueStore[F]
 ) extends KeyValueStore[F] {
 
   override def put(id: String, value: String): F[Unit] = {
     for {
-      _ <- Async[F].delay(cache.invalidate(id))
       _ <- underlyingStore.put(id, value)
+      _ <- Logger[F].debug(s"Cache: store value for $id")
+      _ <- Async[F].delay(cache.put(id, Some(value)))
     } yield ()
   }
   override def get(id: String): F[String] = {
     for {
       valueOpt <- Async[F].delay(cache.getIfPresent(id))
       value <- valueOpt match {
-        case Some(None)    => Async[F].raiseError(KeyNotFoundError(id))
-        case Some(Some(v)) => Sync[F].pure(v)
+        case Some(None) =>
+          Logger[F].debug(s"Cache: return key not found for $id") *>
+            Async[F].raiseError(KeyNotFoundError(id))
+        case Some(Some(v)) =>
+          Logger[F].debug(s"Cache: return value for $id") *>
+            Sync[F].pure(v)
         case None =>
           for {
             value <- underlyingStore.get(id).adaptError {
@@ -31,6 +37,7 @@ class CacheKeyValueStore[F[_]: Async] private (
                 cache.put(id, None)
                 KeyNotFoundError(e)
             }
+            _ <- Logger[F].debug(s"Cache: store value for $id")
             _ <- Async[F].delay(cache.put(id, Some(value)))
           } yield value
       }
@@ -40,7 +47,7 @@ class CacheKeyValueStore[F[_]: Async] private (
 
 object CacheKeyValueStore {
 
-  def make[F[_]: Async](
+  def make[F[_]: Logger: Async](
       config: CacheConfig,
       underlyingStore: KeyValueStore[F]
   ) = {

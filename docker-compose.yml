@@ -13,8 +13,7 @@ services:
           - DATA_DIR=./.data #  Local directory for saving persistent data(Example: es storage)
           - DEFAULT_REGION=us-east-1
         volumes:
-          - './.localstack:/tmp/localstack'
-          - '/var/run/docker.sock:/var/run/docker.sock'
+           - ./aws:/docker-entrypoint-initaws.d
 
     json-validator:
         container_name: "json-validator"
