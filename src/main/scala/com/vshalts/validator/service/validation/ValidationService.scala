@@ -40,6 +40,7 @@ object ValidationService {
         schemaBody: SchemaBody
     ): F[Either[String, Unit]] =
       for {
+        _ <- JsonHelpers.parseJson(schemaBody.content) // validation
         documentJsonStr <- JsonHelpers.sanitizeJsonString(document.content)
         res <- Async[F].blocking {
           val schemaNode = JsonLoader.fromString(schemaBody.content)
