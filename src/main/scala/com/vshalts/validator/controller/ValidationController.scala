@@ -5,11 +5,9 @@ import cats.effect._
 import cats.implicits._
 import com.vshalts.validator.service.validation.ValidationService
 import io.circe.generic.auto._
-import org.http4s.HttpRoutes
 import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.generic.auto._
-import sttp.tapir.server.http4s.Http4sServerInterpreter
 import domain._
 
 class ValidationController[F[_]: Async](
@@ -30,12 +28,14 @@ class ValidationController[F[_]: Async](
         oneOfInvalidResponse(
           oneOfVariant(
             StatusCode.BadRequest,
-            jsonInvalidResponse[InvalidJsonResponse]("Some error with document")
+            jsonInvalidResponse[InvalidJsonResponse](
+              "Document is not valid json"
+            )
           ),
           oneOfVariant(
             StatusCode.BadRequest,
             jsonInvalidResponse[ValidationFailedResponse](
-              "Some error with document"
+              "Document is not valid according to schema"
             )
           )
         )
@@ -62,7 +62,4 @@ class ValidationController[F[_]: Async](
       }
 
   val descriptions = List(validateDocumentEndpoint)
-
-  val routes: HttpRoutes[F] =
-    Http4sServerInterpreter[F]().toRoutes(descriptions)
 }

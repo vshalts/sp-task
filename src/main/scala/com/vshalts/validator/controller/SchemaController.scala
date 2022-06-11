@@ -7,10 +7,8 @@ import service.schema.SchemaService
 import domain._
 import sttp.tapir.generic.auto._
 import io.circe.generic.auto._
-import org.http4s.HttpRoutes
 import sttp.model.StatusCode
 import sttp.tapir._
-import sttp.tapir.server.http4s.Http4sServerInterpreter
 
 class SchemaController[F[_]: Async](
     schemaService: SchemaService[F]
@@ -38,7 +36,7 @@ class SchemaController[F[_]: Async](
         oneOfInvalidResponse(
           oneOfVariant(
             StatusCode.BadRequest,
-            jsonInvalidResponse[InvalidJsonResponse]("Invalid json")
+            jsonInvalidResponse[InvalidJsonResponse]("Invalid json for schema")
           )
         )
       )
@@ -75,7 +73,4 @@ class SchemaController[F[_]: Async](
       }
 
   val descriptions = List(uploadEndpoint, downloadEndpoint)
-
-  val routes: HttpRoutes[F] =
-    Http4sServerInterpreter[F]().toRoutes(descriptions)
 }

@@ -36,9 +36,10 @@ object Main extends IOApp.Simple {
       schemaController = new SchemaController[F](schemaService)
       validationController = new ValidationController[F](validationService)
 
-      routes = schemaController.routes <+> validationController.routes
       descriptions =
         schemaController.descriptions ++ validationController.descriptions
+
+      routes = Http4sServerInterpreter[F]().toRoutes(descriptions)
 
       docsEndpoints = RedocInterpreter().fromEndpoints[F](
         descriptions.map(_.endpoint),
